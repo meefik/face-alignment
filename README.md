@@ -1,8 +1,8 @@
 # face-alignment
 
-Copyright (C) 2016 Anton Skshidlevsky, MIT
+Copyright (C) 2017 Anton Skshidlevsky, MIT
 
-The algorithm of face detection and fast alignment on JavaScript.
+The algorithm of face detection and alignment on JavaScript.
 
 Prepare system for Debian/Ubuntu:
 ```sh
@@ -19,4 +19,4 @@ Starting in browser (available at http://localhost:3000):
 ```js
 npm start
 ```
-See this video: https://youtu.be/fWtI3ehS4HM
+See this video: https://youtu.be/UtkOd42F5-E

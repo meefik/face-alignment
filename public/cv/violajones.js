@@ -6,9 +6,8 @@
  */
 define("cv/violajones", [
   "cv/image",
-  "cv/set",
-  "cv/training/face"
-], function(Image, DisjointSet, Face) {
+  "cv/set"
+], function(Image, DisjointSet) {
   'use strict';
 
   /**
@@ -30,17 +29,11 @@ define("cv/violajones", [
   ViolaJones.REGIONS_OVERLAP = 0.5;
 
   /**
-   * Holds the HAAR cascade classifiers converted from OpenCV training.
-   * @type {array}
-   * @static
-   */
-  ViolaJones.classifiers = Face;
-
-  /**
    * Detects through the HAAR cascade data rectangles matches.
    * @param {pixels} pixels The pixels in a linear [r,g,b,a,...] array.
    * @param {number} width The image width.
    * @param {number} height The image height.
+  *  @param {number[]} classifier The HAAR cascade classifiers converted from OpenCV training.
    * @param {number} initialScale The initial scale to start the block
    *     scaling.
    * @param {number} scaleFactor The scale factor to scale the feature block.
@@ -52,7 +45,7 @@ define("cv/violajones", [
    * @return {array} Found rectangles.
    * @static
    */
-  ViolaJones.detect = function(pixels, width, height, initialScale, scaleFactor, stepSize, edgesDensity) {
+  ViolaJones.detect = function(pixels, width, height, classifier, initialScale, scaleFactor, stepSize, edgesDensity) {
     var total = 0;
     var rects = [];
     var integralImage = new Int32Array(width * height);
@@ -66,8 +59,8 @@ define("cv/violajones", [
 
     Image.computeIntegralImage(pixels, width, height, integralImage, integralImageSquare, tiltedIntegralImage, integralImageSobel);
 
-    var minWidth = this.classifiers[0];
-    var minHeight = this.classifiers[1];
+    var minWidth = classifier[0];
+    var minHeight = classifier[1];
     var scale = initialScale * scaleFactor;
     var blockWidth = (scale * minWidth) | 0;
     var blockHeight = (scale * minHeight) | 0;
@@ -83,7 +76,7 @@ define("cv/violajones", [
             }
           }
 
-          if (this.evalStages(this.classifiers, integralImage, integralImageSquare, tiltedIntegralImage, i, j, width, blockWidth, blockHeight, scale)) {
+          if (this.evalStages(classifier, integralImage, integralImageSquare, tiltedIntegralImage, i, j, width, blockWidth, blockHeight, scale)) {
             rects[total++] = {
               width: blockWidth,
               height: blockHeight,

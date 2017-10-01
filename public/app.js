@@ -59,13 +59,44 @@ require([
     var imageData = context.getImageData(0, 0, width, height);
     // найти лица на изображении
     var data = detector.detect(imageData).map(function(rect, index, arr) {
-      // определить координаты зрачков, расстояние между зрачками, угол наклона и центр поворота
-      var align = detector.align(context.getImageData(rect.x, rect.y, rect.width, rect.height));
+      // найти левый глаз
+      var leftEyeROI = context.getImageData(rect.x, rect.y, rect.width / 2, rect.height / 2);
+      var leftEye = eyeDetector.detect(leftEyeROI).reduce(function(res, eye) {
+        if (!res || eye.width * eye.height > res.width * res.height) return res = {
+          x: eye.x + rect.x,
+          y: eye.y + rect.y,
+          width: eye.width,
+          height: eye.height
+        };
+      }, null);
+
+      if (!leftEye) return {
+        rect: rect
+      };
+
+      // найти правый глаз
+      var rightEyeROI = context.getImageData(rect.x + rect.width / 2, rect.y, rect.width / 2, rect.height / 2);
+      var rightEye = eyeDetector.detect(rightEyeROI).reduce(function(res, eye) {
+        if (!res || eye.width * eye.height > res.width * res.height) return res = {
+          x: eye.x + rect.x + rect.width / 2,
+          y: eye.y + rect.y,
+          width: eye.width,
+          height: eye.height
+        };
+      }, null);
+
+      if (!rightEye) return {
+        rect: rect
+      };
+
+      // рассчитать параметры для выравнивания
+      var align = detector.alignment(leftEye, rightEye);
+
       // повернуть и масштабировать изображение
       var scale = FACE_WIDTH * 0.5 / align.distance;
-      var centerX = align.center.x + rect.x;
-      var centerY = align.center.y + rect.y;
-      var normalized = rotateAndScaleImage(canvas, align.center.x, align.center.y, align.angle, scale);
+      var centerX = align.center[0];
+      var centerY = align.center[1];
+      var normalized = rotateAndScaleImage(canvas, centerX, centerY, align.angle, scale);
       // новые координаты с учетом мастабирования (соотношение сторон 8/7)
       var x = centerX * scale - FACE_WIDTH * 0.5;
       var y = centerY * scale - FACE_HEIGHT * 0.3;
@@ -84,22 +115,35 @@ require([
       var align = face.align;
       context.strokeStyle = 'yellow';
       context.strokeRect(rect.x, rect.y, rect.width, rect.height);
-      context.strokeStyle = 'red';
-      context.strokeRect(align.leftEye.x + rect.x, align.leftEye.y + rect.y, 4, 4);
-      context.strokeRect(align.rightEye.x + rect.x, align.rightEye.y + rect.y, 4, 4);
-      context.font = '11px Arial';
-      context.fillStyle = 'white';
-      context.fillText('x: ' + rect.x, rect.x + rect.width + 5, rect.y + 11);
-      context.fillText('y: ' + rect.y, rect.x + rect.width + 5, rect.y + 22);
-      context.fillText('a: ' + Math.round(align.angle * 100), rect.x + rect.width + 5, rect.y + 33);
-      context.fillText('d: ' + Math.round(align.distance), rect.x + rect.width + 5, rect.y + 44);
-      context.putImageData(face.image, 0, 0);
+      if (align) {
+        context.strokeStyle = 'red';
+        context.strokeRect(align.leftEye[0], align.leftEye[1], 4, 4);
+        context.strokeRect(align.rightEye[0], align.rightEye[1], 4, 4);
+        context.font = '11px Arial';
+        context.fillStyle = 'white';
+        context.fillText('x: ' + rect.x, rect.x + rect.width + 5, rect.y + 11);
+        context.fillText('y: ' + rect.y, rect.x + rect.width + 5, rect.y + 22);
+        context.fillText('a: ' + Math.round(align.angle * 100), rect.x + rect.width + 5, rect.y + 33);
+        context.fillText('d: ' + Math.round(align.distance), rect.x + rect.width + 5, rect.y + 44);
+        context.putImageData(face.image, 0, 0);
+      }
     });
   }
 
   var FACE_WIDTH = 63,
     FACE_HEIGHT = 72;
-  var detector = new Detector();
+
+  var detector = new Detector({
+    initialScale: 4,
+    scaleFactor: 1.2,
+    classifier: 'face'
+  });
+  var eyeDetector = new Detector({
+    initialScale: 1,
+    scaleFactor: 1.05,
+    classifier: 'eye'
+  });
+
   var canvas = document.getElementById('player');
   var context = canvas.getContext('2d');
   var video;
