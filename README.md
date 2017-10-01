@@ -13,8 +13,10 @@ Starting in node:
 ```js
 node detect.js input.png face.png out.png
 ```
+![input.png](/input.png) ![out.png](/out.png) ![out.png](/face.png)
 
 Starting in browser (available at http://localhost:3000):
 ```js
 npm start
 ```
+See this video: https://youtu.be/fWtI3ehS4HM
