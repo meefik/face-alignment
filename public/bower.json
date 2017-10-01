@@ -1,0 +1,22 @@
+{
+  "name": "face-alignment",
+  "version": "1.0.0",
+  "description": "Face detection and alignment",
+  "authors": [
+    {
+      "name": "Anton Skshidlevsky",
+      "email": "meefik@gmail.com"
+    }
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "requirejs": "^2.3.5"
+  },
+  "private": true
+}
