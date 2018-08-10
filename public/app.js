@@ -51,15 +51,18 @@ require([
 
   function tick() {
     window.requestAnimFrame(tick);
-    var width = canvas.width;
-    var height = canvas.height;
-    // отрисовать видео на canvas
+    var width = video.videoWidth;
+    var height = video.videoHeight;
+    if (!width || !height) return;
+    canvas.width = width;
+    canvas.height = height;
+    // draw vidon on canvas
     context.drawImage(video, 0, 0, width, height);
-    // получить данные с canvas
+    // get rgba pixels from canvas
     var imageData = context.getImageData(0, 0, width, height);
-    // найти лица на изображении
+    // look for a faces on the image
     var data = detector.detect(imageData).map(function(rect, index, arr) {
-      // найти левый глаз
+      // find the left eye
       var leftEyeROI = context.getImageData(rect.x, rect.y, rect.width / 2, rect.height / 2);
       var leftEye = eyeDetector.detect(leftEyeROI).reduce(function(res, eye) {
         if (!res || eye.width * eye.height > res.width * res.height) return res = {
@@ -74,7 +77,7 @@ require([
         rect: rect
       };
 
-      // найти правый глаз
+      // find the right eye
       var rightEyeROI = context.getImageData(rect.x + rect.width / 2, rect.y, rect.width / 2, rect.height / 2);
       var rightEye = eyeDetector.detect(rightEyeROI).reduce(function(res, eye) {
         if (!res || eye.width * eye.height > res.width * res.height) return res = {
@@ -89,18 +92,18 @@ require([
         rect: rect
       };
 
-      // рассчитать параметры для выравнивания
+      // calculate parameters for alignment
       var align = detector.alignment(leftEye, rightEye);
 
-      // повернуть и масштабировать изображение
+      // rotate and scale the image
       var scale = FACE_WIDTH * 0.5 / align.distance;
       var centerX = align.center[0];
       var centerY = align.center[1];
       var normalized = rotateAndScaleImage(canvas, centerX, centerY, align.angle, scale);
-      // новые координаты с учетом мастабирования (соотношение сторон 8/7)
+      // new coordinates taking into account the scaling (aspect ratio 8/7)
       var x = centerX * scale - FACE_WIDTH * 0.5;
       var y = centerY * scale - FACE_HEIGHT * 0.3;
-      // получить изображение лица
+      // get a face image
       var faceData = resizeAndCropImage(normalized.canvas, FACE_WIDTH, FACE_HEIGHT, x, y).getImageData(0, 0, FACE_WIDTH, FACE_HEIGHT);
 
       return {
@@ -109,7 +112,7 @@ require([
         image: faceData
       };
     });
-    // отрисовать найденные области
+      // draw found areas
     data.forEach(function(face) {
       var rect = face.rect;
       var align = face.align;
@@ -161,12 +164,8 @@ require([
     }, function(stream) {
       video = document.createElement('video');
       video.autoplay = true;
-      video.src = window.URL.createObjectURL(stream);
-      video.onplay = function() {
-        var width = video.videoWidth
-        var height = video.videoHeight
-        canvas.width = width;
-        canvas.height = height;
+      video.srcObject = stream;
+      video.onplaying = function() {
         window.requestAnimFrame(tick);
       };
     }, function(err) {

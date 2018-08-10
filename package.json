@@ -1,6 +1,6 @@
 {
   "name": "face-alignment",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Face detection and alignment",
   "main": "server.js",
   "author": "Anton Skshidlevsky <meefik@gmail.com>",
@@ -9,8 +9,8 @@
     "postinstall": "if [ -z \"$npm_config_production\" ]; then cd public && bower install; fi"
   },
   "dependencies": {
-    "bower": "^1.8.2",
-    "express": "^4.16.1",
+    "bower": "^1.8.4",
+    "express": "^4.16.3",
     "opencv": "^6.0.0"
   }
 }

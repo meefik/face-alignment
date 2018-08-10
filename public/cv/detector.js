@@ -1,7 +1,3 @@
-/**
- * Детекция объектов на изображении.
- */
-
 define("cv/detector", [
   "cv/image",
   "cv/violajones",
@@ -35,7 +31,8 @@ define("cv/detector", [
       default:
         return false;
     }
-    return ViolaJones.detect(image.data, image.width, image.height,
+    var pixels = Image.grayscale(image.data, image.width, image.height);
+    return ViolaJones.detect(pixels, image.width, image.height,
       classifier,
       this.options.initialScale, this.options.scaleFactor,
       this.options.stepSize, this.options.edgesDensity);

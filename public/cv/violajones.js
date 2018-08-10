@@ -1,5 +1,5 @@
 /**
- * Обнаружение лиц на базе алгоритма Виолы-Джонса.
+ * Face detection based on the Viola-Jones algorithm.
  *
  * @see https://github.com/eduardolundgren/tracking.js
  * @license BSD License © Eduardo Lundgren
@@ -30,7 +30,7 @@ define("cv/violajones", [
 
   /**
    * Detects through the HAAR cascade data rectangles matches.
-   * @param {pixels} pixels The pixels in a linear [r,g,b,a,...] array.
+   * @param {pixels} pixels The pixels in a linear grayscale array.
    * @param {number} width The image width.
    * @param {number} height The image height.
   *  @param {number[]} classifier The HAAR cascade classifiers converted from OpenCV training.
@@ -187,12 +187,6 @@ define("cv/violajones", [
             w3 = w1 + rectHeight * width;
             w4 = w3 + rectWidth;
             rectsSum += (integralImage[w1] - integralImage[w2] - integralImage[w3] + integralImage[w4]) * rectWeight;
-            // TODO: Review the code below to analyze performance when using it instead.
-            // w1 = (rectLeft - 1) + (rectTop - 1) * width;
-            // w2 = (rectLeft + rectWidth - 1) + (rectTop + rectHeight - 1) * width;
-            // w3 = (rectLeft - 1) + (rectTop + rectHeight - 1) * width;
-            // w4 = (rectLeft + rectWidth - 1) + (rectTop - 1) * width;
-            // rectsSum += (integralImage[w1] + integralImage[w2] - integralImage[w3] - integralImage[w4]) * rectWeight;
           }
         }
 

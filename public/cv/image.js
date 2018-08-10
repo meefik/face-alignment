@@ -1,7 +1,3 @@
-/**
- * Вспомогательные функции для работы с изображениями.
- */
-
 define("cv/image", function() {
   'use strict';
 
@@ -14,36 +10,35 @@ define("cv/image", function() {
 
   /**
    * Computes the integral image for summed, squared, rotated and sobel pixels.
-   * @param {array} pixels The pixels in a linear [r,g,b,a,...] array to loop
-   *     through.
+   * @param {number[]} pixels The grayscale pixels in a linear array.
    * @param {number} width The image width.
    * @param {number} height The image height.
-   * @param {array} opt_integralImage Empty array of size `width * height` to
+   * @param {number[]} opt_integralImage Empty array of size `width * height` to
    *     be filled with the integral image values. If not specified compute sum
    *     values will be skipped.
-   * @param {array} opt_integralImageSquare Empty array of size `width *
+   * @param {number[]} opt_integralImageSquare Empty array of size `width *
    *     height` to be filled with the integral image squared values. If not
    *     specified compute squared values will be skipped.
-   * @param {array} opt_tiltedIntegralImage Empty array of size `width *
+   * @param {number[]} opt_tiltedIntegralImage Empty array of size `width *
    *     height` to be filled with the rotated integral image values. If not
    *     specified compute sum values will be skipped.
-   * @param {array} opt_integralImageSobel Empty array of size `width *
+   * @param {number[]} opt_integralImageSobel Empty array of size `width *
    *     height` to be filled with the integral image of sobel values. If not
    *     specified compute sobel filtering will be skipped.
    * @static
    */
   Image.computeIntegralImage = function(pixels, width, height, opt_integralImage, opt_integralImageSquare, opt_tiltedIntegralImage, opt_integralImageSobel) {
     if (arguments.length < 4) {
-      throw new Error('You should specify at least one output array in the order: sum, square, tilted, sobel.');
+      throw new Error("You should specify at least one output array in the order: sum, square, tilted, sobel.");
     }
     var pixelsSobel;
     if (opt_integralImageSobel) {
       pixelsSobel = this.sobel(pixels, width, height);
     }
-    for (var i = 0; i < height; i++) {
-      for (var j = 0; j < width; j++) {
-        var w = i * width * 4 + j * 4;
-        var pixel = ~~(pixels[w] * 0.299 + pixels[w + 1] * 0.587 + pixels[w + 2] * 0.114);
+    for (let i = 0; i < height; i++) {
+      for (let j = 0; j < width; j++) {
+        var w = i * width + j;
+        var pixel = pixels[w];
         if (opt_integralImage) {
           this.computePixelValueSAT(opt_integralImage, width, i, j, pixel);
         }
@@ -51,8 +46,8 @@ define("cv/image", function() {
           this.computePixelValueSAT(opt_integralImageSquare, width, i, j, pixel * pixel);
         }
         if (opt_tiltedIntegralImage) {
-          var w1 = w - width * 4;
-          var pixelAbove = ~~(pixels[w1] * 0.299 + pixels[w1 + 1] * 0.587 + pixels[w1 + 2] * 0.114);
+          var w1 = w - width;
+          var pixelAbove = pixels[w1];
           this.computePixelValueRSAT(opt_tiltedIntegralImage, width, i, j, pixel, pixelAbove || 0);
         }
         if (opt_integralImageSobel) {
@@ -68,10 +63,10 @@ define("cv/image", function() {
    *
    * RSAT(x, y) = RSAT(x-1, y-1) + RSAT(x+1, y-1) - RSAT(x, y-2) + I(x, y) + I(x, y-1)
    *
-   * @param {number} width The image width.
-   * @param {array} RSAT Empty array of size `width * height` to be filled with
+   * @param {number[]} RSAT Empty array of size `width * height` to be filled with
    *     the integral image values. If not specified compute sum values will be
    *     skipped.
+   * @param {number} width The image width.
    * @param {number} i Vertical position of the pixel to be evaluated.
    * @param {number} j Horizontal position of the pixel to be evaluated.
    * @param {number} pixel Pixel value to be added to the integral image.
@@ -88,10 +83,10 @@ define("cv/image", function() {
    *
    * SAT(x, y) = SAT(x, y-1) + SAT(x-1, y) + I(x, y) - SAT(x-1, y-1)
    *
-   * @param {number} width The image width.
-   * @param {array} SAT Empty array of size `width * height` to be filled with
+   * @param {number[]} SAT Empty array of size `width * height` to be filled with
    *     the integral image values. If not specified compute sum values will be
    *     skipped.
+   * @param {number} width The image width.
    * @param {number} i Vertical position of the pixel to be evaluated.
    * @param {number} j Horizontal position of the pixel to be evaluated.
    * @param {number} pixel Pixel value to be added to the integral image.
@@ -104,42 +99,6 @@ define("cv/image", function() {
   };
 
   /**
-   * Converts a color from a colorspace based on an RGB color model to a
-   * grayscale representation of its luminance. The coefficients represent the
-   * measured intensity perception of typical trichromat humans, in
-   * particular, human vision is most sensitive to green and least sensitive
-   * to blue.
-   * @param {pixels} pixels The pixels in a linear [r,g,b,a,...] array.
-   * @param {number} width The image width.
-   * @param {number} height The image height.
-   * @param {boolean} fillRGBA If the result should fill all RGBA values with the gray scale
-   *  values, instead of returning a single value per pixel.
-   * @param {Uint8ClampedArray} The grayscale pixels in a linear array ([p,p,p,a,...] if fillRGBA
-   *  is true and [p1, p2, p3, ...] if fillRGBA is false).
-   * @static
-   */
-  Image.grayscale = function(pixels, width, height, fillRGBA) {
-    var gray = new Uint8ClampedArray(fillRGBA ? pixels.length : pixels.length >> 2);
-    var p = 0;
-    var w = 0;
-    for (var i = 0; i < height; i++) {
-      for (var j = 0; j < width; j++) {
-        var value = pixels[w] * 0.299 + pixels[w + 1] * 0.587 + pixels[w + 2] * 0.114;
-        gray[p++] = value;
-
-        if (fillRGBA) {
-          gray[p++] = value;
-          gray[p++] = value;
-          gray[p++] = pixels[w + 3];
-        }
-
-        w += 4;
-      }
-    }
-    return gray;
-  };
-
-  /**
    * Fast horizontal separable convolution. A point spread function (PSF) is
    * said to be separable if it can be broken into two one-dimensional
    * signals: a vertical and a horizontal projection. The convolution is
@@ -147,44 +106,34 @@ define("cv/image", function() {
    * top left corner, so as to move the kernel through all the positions where
    * the kernel fits entirely within the boundaries of the image. Adapted from
    * https://github.com/kig/canvasfilters.
-   * @param {pixels} pixels The pixels in a linear [r,g,b,a,...] array.
+   * @param {number[]} pixels The grayscale pixels in a linear array.
    * @param {number} width The image width.
    * @param {number} height The image height.
-   * @param {array} weightsVector The weighting vector, e.g [-1,0,1].
-   * @param {number} opaque
-   * @return {array} The convoluted pixels in a linear [r,g,b,a,...] array.
+   * @param {number[]} weightsVector The weighting vector, e.g [-1,0,1].
+   * @return {number[]} The convoluted pixels in a linear array.
    */
-  Image.horizontalConvolve = function(pixels, width, height, weightsVector, opaque) {
+  Image.horizontalConvolve = function(pixels, width, height, weightsVector) {
     var side = weightsVector.length;
     var halfSide = Math.floor(side / 2);
-    var output = new Float32Array(width * height * 4);
-    var alphaFac = opaque ? 1 : 0;
+    var output = new Int32Array(width * height);
 
-    for (var y = 0; y < height; y++) {
-      for (var x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
         var sy = y;
         var sx = x;
-        var offset = (y * width + x) * 4;
-        var r = 0;
-        var g = 0;
-        var b = 0;
-        var a = 0;
-        for (var cx = 0; cx < side; cx++) {
+        var offset = y * width + x;
+        var c = 0;
+        for (let cx = 0; cx < side; cx++) {
           var scy = sy;
           var scx = Math.min(width - 1, Math.max(0, sx + cx - halfSide));
-          var poffset = (scy * width + scx) * 4;
+          var poffset = scy * width + scx;
           var wt = weightsVector[cx];
-          r += pixels[poffset] * wt;
-          g += pixels[poffset + 1] * wt;
-          b += pixels[poffset + 2] * wt;
-          a += pixels[poffset + 3] * wt;
+          c += pixels[poffset] * wt;
         }
-        output[offset] = r;
-        output[offset + 1] = g;
-        output[offset + 2] = b;
-        output[offset + 3] = a + alphaFac * (255 - a);
+        output[offset] = c;
       }
     }
+
     return output;
   };
 
@@ -196,44 +145,34 @@ define("cv/image", function() {
    * top left corner, so as to move the kernel through all the positions where
    * the kernel fits entirely within the boundaries of the image. Adapted from
    * https://github.com/kig/canvasfilters.
-   * @param {pixels} pixels The pixels in a linear [r,g,b,a,...] array.
+   * @param {number[]} pixels The grayscale pixels in a linear array.
    * @param {number} width The image width.
    * @param {number} height The image height.
-   * @param {array} weightsVector The weighting vector, e.g [-1,0,1].
-   * @param {number} opaque
-   * @return {array} The convoluted pixels in a linear [r,g,b,a,...] array.
+   * @param {number[]} weightsVector The weighting vector, e.g [-1,0,1].
+   * @return {number[]} The convoluted pixels in a linear array.
    */
-  Image.verticalConvolve = function(pixels, width, height, weightsVector, opaque) {
+  Image.verticalConvolve = function(pixels, width, height, weightsVector) {
     var side = weightsVector.length;
     var halfSide = Math.floor(side / 2);
-    var output = new Float32Array(width * height * 4);
-    var alphaFac = opaque ? 1 : 0;
+    var output = new Int32Array(width * height);
 
-    for (var y = 0; y < height; y++) {
-      for (var x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
         var sy = y;
         var sx = x;
-        var offset = (y * width + x) * 4;
-        var r = 0;
-        var g = 0;
-        var b = 0;
-        var a = 0;
-        for (var cy = 0; cy < side; cy++) {
+        var offset = y * width + x;
+        var c = 0;
+        for (let cy = 0; cy < side; cy++) {
           var scy = Math.min(height - 1, Math.max(0, sy + cy - halfSide));
           var scx = sx;
-          var poffset = (scy * width + scx) * 4;
+          var poffset = scy * width + scx;
           var wt = weightsVector[cy];
-          r += pixels[poffset] * wt;
-          g += pixels[poffset + 1] * wt;
-          b += pixels[poffset + 2] * wt;
-          a += pixels[poffset + 3] * wt;
+          c += pixels[poffset] * wt;
         }
-        output[offset] = r;
-        output[offset + 1] = g;
-        output[offset + 2] = b;
-        output[offset + 3] = a + alphaFac * (255 - a);
+        output[offset] = c;
       }
     }
+
     return output;
   };
 
@@ -245,17 +184,16 @@ define("cv/image", function() {
    * corner, so as to move the kernel through all the positions where the
    * kernel fits entirely within the boundaries of the image. Adapted from
    * https://github.com/kig/canvasfilters.
-   * @param {pixels} pixels The pixels in a linear [r,g,b,a,...] array.
+   * @param {number[]} pixels The grayscale pixels in a linear array.
    * @param {number} width The image width.
    * @param {number} height The image height.
-   * @param {array} horizWeights The horizontal weighting vector, e.g [-1,0,1].
-   * @param {array} vertWeights The vertical vector, e.g [-1,0,1].
-   * @param {number} opaque
-   * @return {array} The convoluted pixels in a linear [r,g,b,a,...] array.
+   * @param {number[]} horizWeights The horizontal weighting vector, e.g [-1,0,1].
+   * @param {number[]} vertWeights The vertical vector, e.g [-1,0,1].
+   * @return {number[]} The convoluted pixels in a linear array.
    */
-  Image.separableConvolve = function(pixels, width, height, horizWeights, vertWeights, opaque) {
-    var vertical = this.verticalConvolve(pixels, width, height, vertWeights, opaque);
-    return this.horizontalConvolve(vertical, width, height, horizWeights, opaque);
+  Image.separableConvolve = function(pixels, width, height, horizWeights, vertWeights) {
+    var vertical = this.verticalConvolve(pixels, width, height, vertWeights);
+    return this.horizontalConvolve(vertical, width, height, horizWeights);
   };
 
   /**
@@ -265,30 +203,94 @@ define("cv/image", function() {
    * first grayscaling the image, then taking the horizontal and vertical
    * gradients and finally combining the gradient images to make up the final
    * image. Adapted from https://github.com/kig/canvasfilters.
-   * @param {pixels} pixels The pixels in a linear [r,g,b,a,...] array.
+   * @param {number[]} pixels The grayscale pixels in a linear array.
    * @param {number} width The image width.
    * @param {number} height The image height.
-   * @return {array} The edge pixels in a linear [r,g,b,a,...] array.
+   * @return {number[]} The edge pixels in a linear array.
    */
   Image.sobel = function(pixels, width, height) {
-    pixels = this.grayscale(pixels, width, height, true);
-    var output = new Float32Array(width * height * 4);
-    var sobelSignVector = new Float32Array([-1, 0, 1]);
-    var sobelScaleVector = new Float32Array([1, 2, 1]);
+    var output = new Int32Array(width * height);
+    var sobelSignVector = new Int32Array([-1, 0, 1]);
+    var sobelScaleVector = new Int32Array([1, 2, 1]);
     var vertical = this.separableConvolve(pixels, width, height, sobelSignVector, sobelScaleVector);
     var horizontal = this.separableConvolve(pixels, width, height, sobelScaleVector, sobelSignVector);
 
-    for (var i = 0; i < output.length; i += 4) {
+    for (let i = 0; i < output.length; i++) {
       var v = vertical[i];
       var h = horizontal[i];
-      var p = Math.sqrt(h * h + v * v);
-      output[i] = p;
-      output[i + 1] = p;
-      output[i + 2] = p;
-      output[i + 3] = 255;
+      output[i] = Math.sqrt(h * h + v * v);
     }
 
     return output;
+  };
+
+  /**
+   * Converts a color from a color-space based on an RGB color model to a
+   * grayscale representation of its luminance. The coefficients represent the
+   * measured intensity perception of typical trichromat humans, in
+   * particular, human vision is most sensitive to green and least sensitive
+   * to blue.
+   * @param {Uint8Array|Uint8ClampedArray|Array} pixels The pixels in a linear [r,g,b,a,...] array.
+   * @param {number} width The image width.
+   * @param {number} height The image height.
+   * @param {boolean} fillRGBA If the result should fill all RGBA values with the gray scale
+   *  values, instead of returning a single value per pixel.
+   * @return {Uint8ClampedArray} The grayscale pixels in a linear array ([p,p,p,a,...] if fillRGBA
+   *  is true and [p1, p2, p3, ...] if fillRGBA is false).
+   * @static
+   */
+  Image.grayscale = function(pixels, width, height, fillRGBA) {
+
+    /*
+      Performance result (rough EST. - image size, CPU arch. will affect):
+      https://jsperf.com/tracking-new-image-to-grayscale
+      Firefox v.60b:
+            fillRGBA  Gray only
+      Old      11       551     OPs/sec
+      New    3548      6487     OPs/sec
+      ---------------------------------
+              322.5x     11.8x  faster
+      Chrome v.67b:
+            fillRGBA  Gray only
+      Old     291       489     OPs/sec
+      New    6975      6635     OPs/sec
+      ---------------------------------
+              24.0x      13.6x  faster
+      - Ken Nilsen / epistemex
+     */
+
+    var len = pixels.length >> 2;
+    var gray = fillRGBA ? new Uint32Array(len) : new Uint8Array(len);
+    var data32 = new Uint32Array(pixels.buffer || new Uint8Array(pixels).buffer);
+    var i = 0;
+    var c = 0;
+    var luma = 0;
+
+    // unrolled loops to not have to check fillRGBA each iteration
+    if (fillRGBA) {
+      while (i < len) {
+        // Entire pixel in little-endian order (ABGR)
+        c = data32[i];
+
+        // Using the more up-to-date REC/BT.709 approx. weights for luma instead: [0.2126, 0.7152, 0.0722].
+        //   luma = ((c>>>16 & 0xff) * 0.2126 + (c>>>8 & 0xff) * 0.7152 + (c & 0xff) * 0.0722 + 0.5)|0;
+        // But I'm using scaled integers here for speed (x 0xffff). This can be improved more using 2^n
+        //   close to the factors allowing for shift-ops (i.e. 4732 -> 4096 => .. (c&0xff) << 12 .. etc.)
+        //   if "accuracy" is not important (luma is anyway an visual approx.):
+        luma = ((c >>> 16 & 0xff) * 13933 + (c >>> 8 & 0xff) * 46871 + (c & 0xff) * 4732) >>> 16;
+        gray[i++] = luma * 0x10101 | c & 0xff000000;
+      }
+    } else {
+      while (i < len) {
+        c = data32[i];
+        luma = ((c >>> 16 & 0xff) * 13933 + (c >>> 8 & 0xff) * 46871 + (c & 0xff) * 4732) >>> 16;
+        // ideally, alpha should affect value here: value * (alpha/255) or with shift-ops for the above version
+        gray[i++] = luma;
+      }
+    }
+
+    // Consolidate array view to byte component format independent of source view
+    return new Uint8ClampedArray(gray.buffer);
   };
 
   /**
@@ -315,48 +317,16 @@ define("cv/image", function() {
   };
 
   /**
-   * Equalizes the histogram of a grayscale image, normalizing the
-   * brightness and increasing the contrast of the image.
-   * @param {pixels} pixels The grayscale pixels in a linear array.
-   * @param {number} width The image width.
-   * @param {number} height The image height.
-   * @return {array} The equalized grayscale pixels in a linear array.
-   */
-  Image.equalizeHist = function(pixels, width, height) {
-    var equalized = new Uint8ClampedArray(pixels.length);
-
-    var histogram = new Array(256);
-    for (var i = 0; i < 256; i++) histogram[i] = 0;
-
-    for (var i = 0; i < pixels.length; i++) {
-      equalized[i] = pixels[i];
-      histogram[pixels[i]]++;
-    }
-
-    var prev = histogram[0];
-    for (var i = 0; i < 256; i++) {
-      histogram[i] += prev;
-      prev = histogram[i];
-    }
-
-    var norm = 255 / pixels.length;
-    for (var i = 0; i < pixels.length; i++)
-      equalized[i] = (histogram[pixels[i]] * norm + 0.5) | 0;
-
-    return equalized;
-  };
-
-  /**
    * Equalizes the histogram of an unsigned 1-channel image with integer
    * values in [0, 255]. Corresponds to the equalizeHist OpenCV function.
    *
    * @param {Array}  src   1-channel integer source image
-   * @param {Number} step  Sampling stepsize, increase for performance
+   * @param {number} step  Sampling stepsize, increase for performance
    * @param {Array}  [dst] 1-channel destination image
    *
    * @return {Array} 1-channel destination image
    */
-  Image.equalizeHistogram = function(src, step, dst) {
+  Image.equalizeHist = function(src, step, dst) {
     var srcLength = src.length;
     if (!dst) dst = src;
     if (!step) step = 5;
@@ -402,24 +372,24 @@ define("cv/image", function() {
   };
 
   /**
-   * Расстояние между двумя точками.
-   * http://en.wikipedia.org/wiki/Euclidean_distance
+   * Euclidean distance between two points.
+   * @see http://en.wikipedia.org/wiki/Euclidean_distance
    *
-   * @param {Number[]} p1 - координаты первой точки [x, y]
-   * @param {Number[]} p2 - координаты второй точки [x, y]
+   * @param {number[]} p1 Coordinate of first point [x, y]
+   * @param {number[]} p2 Coordinate of second point [x, y]
    *
-   * @return {Number}
+   * @return {number}
    */
   Image.distance = function(p1, p2) {
     return Math.sqrt(Math.pow((p1[0] - p2[0]), 2) + Math.pow((p1[1] - p2[1]), 2));
   };
 
   /**
-   * Угол между двумя точками.
+   * Angle between two points.
    *
-   * @param {Number[]} p1 - координаты первой точки [x, y]
-   * @param {Number[]} p2 - координаты второй точки [x, y]
-   * @param {Boolean} degrees - перевести в градусы.
+   * @param {number[]} p1 Coordinate of first point [x, y]
+   * @param {number[]} p2 Coordinate of second point [x, y]
+   * @param {boolean} degrees - перевести в градусы.
    *
    * @return {Number}
    */
@@ -432,191 +402,16 @@ define("cv/image", function() {
   };
 
   /**
-   * Координаты центра между двумя точками.
+   * Coordinate of center between two points.
    *
-   * @param {Number[]} p1 - координаты первой точки [x, y]
-   * @param {Number[]} p2 - координаты второй точки [x, y]
-   * @returns {Number[]} [x, y]
+   * @param {number[]} p1 Coordinate of first point [x, y]
+   * @param {number[]} p2 Coordinate of second point [x, y]
+   * @returns {number[]} [x, y]
    */
   Image.center = function(p1, p2) {
     var x = (p1[0] + p2[0]) / 2;
     var y = (p1[1] + p2[1]) / 2;
     return [x, y];
-  };
-
-  /**
-   * Окно Ханна (Хеннинга).
-   * https://en.wikipedia.org/wiki/Window_function
-   *
-   * @param {Number[]} pixels - Массив байт 1-канального изображения (0-255).
-   * @param {Number} width - Ширина изображения.
-   * @param {Number} height - Высота изображения.
-   *
-   * @return {Number[]} - Массив байт 1-канального изображения.
-   */
-  Image.windowFog = function(pixels, width, height) {
-    var dst = [];
-    var centerX = width / 2;
-    var centerY = height / 2;
-    var N = Math.max(width, height);
-    // var N = distance([0, 0], [width, height]);
-    for (var y = 0; y < height; y++) {
-      var offset = y * width;
-      for (var x = 0; x < width; x++) {
-        var index = offset + x;
-        var n = this.distance([x, y], [centerX, centerY]);
-        if (n < N / 2) {
-          // var w = 0.53836 - 0.46164 * Math.cos(2 * Math.PI * n / (N - 1));
-          var w = 0.5 * (1 - Math.cos(2 * Math.PI * n / (N - 1)));
-          dst[index] = ~~(pixels[index] * (1 - w));
-        } else dst[index] = 0;
-      }
-    }
-    return dst;
-  };
-
-  /**
-   * Градиент изображения по оси X.
-   *
-   * @param {Number[]} pixels - Массив байт 1-канального изображения (0-255).
-   * @param {Number} width - Ширина изображения.
-   * @param {Number} height - Высота изображения.
-   *
-   * @return {Number[]} - Массив байт 1-канального изображения (0-255).
-   */
-  Image.gradientX = function(pixels, width, height) {
-    var dst = [];
-    for (var y = 0; y < height; y++) {
-      var offset = y * width;
-      for (var x = 0; x < width; x++) {
-        var n = offset + x;
-        var p = pixels[n];
-        var dx = pixels[n + 1] - p;
-        if (isNaN(dx)) dx = 0;
-        var D = Math.pow(dx, 2);
-        dst.push(D);
-      }
-    }
-    return dst;
-  };
-
-  /**
-   * Градиент изображения по оси Y.
-   *
-   * @param {Number[]} pixels - Массив байт 1-канального изображения (0-255).
-   * @param {Number} width - Ширина изображения.
-   * @param {Number} height - Высота изображения.
-   *
-   * @return {Number[]} - Массив байт 1-канального изображения (0-255).
-   */
-  Image.gradientY = function(pixels, width, height) {
-    var dst = [];
-    for (var y = 0; y < height; y++) {
-      var offset = y * width;
-      for (var x = 0; x < width; x++) {
-        var n = offset + x;
-        var p = pixels[n];
-        var dy = pixels[n + width] - p;
-        if (isNaN(dy)) dy = 0;
-        var D = Math.pow(dy, 2);
-        dst.push(D);
-      }
-    }
-    return dst;
-  };
-
-  /**
-   * Проекция но ось X.
-   *
-   * @param {Number[]} pixels - Массив байт 1-канального изображения (0-255).
-   * @param {Number} width - Ширина изображения.
-   * @param {Number} height - Высота изображения.
-   * @param {String[]} [offset] - [x1, x2, y1, y2]
-   *
-   * @return {Number[]} - Гистограмма проекции на ось.
-   */
-  Image.projectionX = function(pixels, width, height, offset) {
-    var hist = [];
-    for (var x = 0; x < width; x++) {
-      hist[x] = 0;
-      for (var y = 0; y < height; y++) {
-        var n = y * width + x;
-        if (!offset ||
-          x >= offset[0] && x < offset[1] &&
-          y >= offset[2] && y < offset[3]) {
-          hist[x] += pixels[n];
-        }
-      }
-    }
-    return hist;
-  };
-
-  /**
-   * Проекция но ось Y.
-   *
-   * @param {Number[]} pixels - Массив байт 1-канального изображения (0-255).
-   * @param {Number} width - Ширина изображения.
-   * @param {Number} height - Высота изображения.
-   * @param {String[]} [offset] - [x1, x2, y1, y2]
-   *
-   * @return {Number[]} - Гистограмма проекции на ось.
-   */
-  Image.projectionY = function(pixels, width, height, offset) {
-    var hist = [];
-    for (var y = 0; y < height; y++) {
-      hist[y] = 0;
-      for (var x = 0; x < width; x++) {
-        var n = y * width + x;
-        if (!offset ||
-          x >= offset[0] && x < offset[1] &&
-          y >= offset[2] && y < offset[3]) {
-          hist[y] += pixels[n];
-        }
-      }
-    }
-    return hist;
-  };
-
-  /**
-   * Получить индекс максимального элемента последовательности.
-   *
-   * @param {Number[]} seq - Последовательность.
-   * @param {Number[]} smooth - Усреднение соседних элементов [-a, +b].
-   *
-   * @return {Number} - Индекс максимального элемента у учетом усреднения.
-   */
-  Image.findMaxIndex = function(seq, smooth) {
-    if (!smooth) smooth = [0, 0];
-    var w = smooth[0] + smooth[1] + 1;
-    var max = 0;
-    var index = 0;
-    for (var i = smooth[0], l = seq.length; i < l - smooth[1]; i++) {
-      // усреднение соседних столбцов гистограммы
-      var sum = 0;
-      for (var j = -1 * smooth[0]; j <= smooth[1]; j++) sum += seq[i + j];
-      var h = sum / w;
-      // поиск пика гистограммы
-      if (h > max) {
-        max = h;
-        index = i;
-      }
-    }
-    return index;
-  };
-
-  /**
-   * Поиск горизонтальной линии симметрии.
-   *
-   * @param {Number[]} pixels - Массив байт 1-канального изображения (0-255).
-   * @param {Number} width - Ширина изображения.
-   * @param {Number} height - Высота изображения.
-   *
-   * @return {Number[]} - Координата центра по оси X.
-   */
-  Image.horizontalSymmetry = function(pixels, width, height) {
-    var fog = Image.windowFog(pixels, width, height);
-    var hist = Image.projectionX(fog, width, height);
-    return Image.findMaxIndex(hist, [1, 1]);
   };
 
   return Image;
